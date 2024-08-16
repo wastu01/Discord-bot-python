@@ -5,3 +5,4 @@
 /.vscode
 *.lock
 json_load.py
+setting.json
