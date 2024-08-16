@@ -4,3 +4,4 @@
 .env
 /.vscode
 *.lock
+json_load.py
