@@ -5,6 +5,7 @@
 """
 
 import os
+import json
 from typing import Final
 from dotenv import load_dotenv
 # 導入Discord.py模組
@@ -20,9 +21,12 @@ SERVER_ID: Final[int] = int(os.getenv('SERVER_ID'))
 QUIT_CHANNEL_ID: Final[int] = int(os.getenv('QUIT_CHANNEL_ID'))
 WELCOME_CHANNEL_ID: Final[int] = int(os.getenv('WELCOME_CHANNEL_ID'))
 
-print(type(WELCOME_CHANNEL_ID))
+# print(type(WELCOME_CHANNEL_ID))
 # print(TOKEN)
 
+with open("./setting.json",mode="r",encoding="utf8") as f:
+    data = json.load(f)
+    print(data["IMAGES"])
 
 
 # bot是跟discord連接，intents是要求機器人的權限
@@ -30,7 +34,7 @@ intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 # client = discord.Client(intents = intents)
-bot = commands.Bot(command_prefix = "%", intents = intents)
+bot = commands.Bot(command_prefix = "!", intents = intents)
 
 # 調用event函式庫
 @bot.event
@@ -41,13 +45,12 @@ async def on_ready():
     for guild in bot.guilds:
         print(f"{guild.name} (ID: {guild.id})")
     channel = bot.get_channel(WELCOME_CHANNEL_ID)
-    print(channel)
+    # print(channel)
     # print(bot.guilds[0])
-    if channel:
-        print("here")
+    if channel:        
         owner = guild.owner.name
-        owner_nick = guild.owner.nick
-        await channel.send(f"owner name is {owner},{owner_nick}")
+        owner_nick = guild.owner.nick if guild.owner.nick else owner  # 使用名稱作為暱稱的默認值
+        await channel.send(f"Owner name is {owner}, Nickname is {owner_nick}")
 
 
 @bot.event
@@ -83,10 +86,10 @@ async def on_message(message):
 async def on_member_join(member):
     # 獲取發送歡迎訊息的頻道
     channel = bot.get_channel(WELCOME_CHANNEL_ID)
-    
+    server_name = member.guild.name
     # 發送歡迎訊息
     if channel:
-        await channel.send(f"歡迎 {member.mention} 加入我們的伺服器！")
+        await channel.send(f"歡迎 {member.mention} 加入我們的伺服器 {server_name}！")
 
     print(f"{member} 加入了伺服器！")
 
@@ -97,31 +100,63 @@ async def on_member_remove(member):
     
     # 發送離開訊息
     if channel:
-        await channel.send(f"{member.mention} 已離開伺服器，期待你再回來！")
+        await channel.send(f"{member.mention} 已離開我們的伺服器，期待你再回來！")
     
     print(f"{member} 離開了伺服器！")
 
-      
-@bot.command()
-async def hello(ctx):
-    # 列出 ctx 所有的屬性和方法
-    # print(dir(ctx))
-    await ctx.send(f"Message content: {ctx.message.content}")
-    await ctx.send(f"Author: {ctx.author}")
-    await ctx.send(f"Channel: {ctx.channel}")
-    await ctx.send(f"Server: {ctx.guild}")
 
 @bot.command()
-async def ser_owner(ctx):
-    guild = bot.get_guild(SERVER_ID)
-    # print(dir(guild))
-    owner = guild.owner_id
-    await ctx.send(owner)
+async def load(ctx, extension):
+    bot.load_extension(f"cmds{extension}")
+    await ctx.send(f"loading{extension}done")
 
 @bot.command()
-async def ping(ctx):
-    await ctx.send(f"{bot.latency*1000:.6f} (ms)")
+async def unload(ctx, extension):
+    bot.unload_extension(f"cmds{extension}")
+    await ctx.send(f"unloading{extension}done")
+
+@bot.command()
+async def reload(ctx, extension):
+    bot.reload_extension(f"cmds{extension}")
+    await ctx.send(f"reloading{extension}done")
+
+
+# !delete_one_msg
+@bot.command()
+async def delete_one_msg(ctx, channel_id: int, message_id: int):
+    await ctx.message.delete()
+
+# !delete_specific_msg
+@bot.command()
+async def delete_specific_msg(ctx, message_id: int):
+    # 獲取當前頻道
+    channel = ctx.channel
+    try:
+        # 獲取並刪除指定的訊息
+        message = await channel.fetch_message(message_id)
+        await message.delete()
+        await ctx.send("訊息已刪除")
+    except discord.NotFound:
+        await ctx.send("找不到訊息")
+    except discord.Forbidden:
+        await ctx.send("無法刪除訊息，權限不足")
+    except discord.HTTPException as e:
+        await ctx.send(f"刪除訊息時發生錯誤: {e}")
+        
     
+    
+import asyncio
+async def main():
+    for filename in os.listdir("./cmds"):
+        if filename.endswith("py"):
+            await bot.load_extension(f"cmds.{filename[:-3]}")
+    await bot.start(TOKEN)
 
-bot.run(TOKEN)
+        
+if __name__=="__main__":
+    asyncio.run(main())
+    
+# https://fakeimg.pl/350x200/?text=Hello
+
+
 # bot.run(data["TOKEN"])
