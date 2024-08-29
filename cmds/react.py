@@ -17,6 +17,12 @@ WELCOME_CHANNEL_ID: Final[int] = int(os.getenv('WELCOME_CHANNEL_ID'))
 
 
 class React(Cog_Extension):
+    
+    @commands.command()
+    async def test(self, ctx):
+        await ctx.send("ABCCC")
+        
+    
     @commands.command()
     async def localimg(self,ctx):
         dcFile = discord.File('./pics/dalle-discord-bot-logo.webp')
@@ -42,7 +48,7 @@ class React(Cog_Extension):
 
     @commands.command()
     async def ser_owner(self,ctx):
-        guild = bot.get_guild(SERVER_ID)
+        guild = self.bot.get_guild(SERVER_ID)
         # print(dir(guild))
         owner = guild.owner_id
         await ctx.send(owner)
