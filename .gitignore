@@ -7,3 +7,6 @@
 json_load.py
 setting.json
 *.pyc
+/.venv
+*.pyc
+/cmds/__pycache__
